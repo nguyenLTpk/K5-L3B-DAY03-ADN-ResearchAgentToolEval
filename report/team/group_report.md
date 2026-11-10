@@ -80,7 +80,7 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 Ghi chú về run: file `starter_v0/runs/v0_B_base_openrouter_20261110T180937971787.json` mang nhãn `v0` nhưng có hash của v3 (`v0+p04552040eeb2+ta01960b8f782`, chạy lúc 18:09 sau run v3 lúc 18:08) và đạt 20/20. Đây là lần chạy lặp lại v3 bị đặt nhầm nhãn, **không phải baseline**. Baseline v0 hợp lệ duy nhất là `v0_B_base_openrouter_20261110T180041253555.json` (`v0+peb1c8179815b+te69bc53ed884`, 15/20). Run Gemini `v0_B_base_gemini_...` bị loại vì `provider_error_cases=5`.
 
 Kết quả thực nghiệm v4 và v5: sau khi B thêm 4 tool mới vào cuối `tools.yaml`, `tools_hash` của bản nộp đổi thành `a078bdccfe27`. Hai run v4 và v5 đã hoàn thành chuẩn xác trên nhánh `b-tool`:
-- **v4:** chạy với prompt snapshot v3 và 14 tool declarations. Đạt 19/20 PASS (`R10` gọi timeline vì tự điền tài khoản, phản ánh tính stochastic của model khi thêm 4 tool mới vào context).
+- **v4:** chạy với prompt snapshot v3 và 14 tool declarations. Đạt 19/20 PASS. `R10` hồi quy: model tự điền tài khoản `elonmusk` thay vì hỏi lại (phân tích ở B2).
 - **v5:** chạy với prompt v5 (đã bỏ chỉ dẫn ép một bước/một tool) và 14 tool declarations. Đạt **20/20 PASS (100%)**, 0 lỗi provider, routing 100%, arguments 100%, multiturn 100%.
 
 Lần chạy v4/v5 đầu tiên (commit `f6c88c6` trên main) đã bị loại vì chạy trước khi merge 4 tool mới của B (mang hash cũ). Hai run v4 (`runs/v4_B_base_openrouter_20261110T190814400861.json`) và v5 (`runs/v5_B_base_openrouter_20261110T190946471016.json`) hiện tại trên nhánh `b-tool` là hai run chuẩn khớp hoàn toàn với bản nộp cuối cùng.
@@ -119,6 +119,19 @@ Giả thuyết cho lỗi còn lại: quy tắc chung “thiếu thông tin → t
 - 19 ca còn lại đều giữ vững trạng thái PASS, xác nhận không có bất kỳ ca hồi quy (regression) nào phát sinh.
 
 Thử nghiệm nhiều nguồn được hoãn sang vòng sau. Chỉ dẫn chọn một tool vẫn được giữ để tách riêng cơ chế của v3; đây là hạn chế đã biết, dù R13 gọi đủ hai tool ở v0/v1/v2/v3. Không gán cải thiện nhiều nguồn cho v3 hoặc thêm thay đổi xử lý ngữ cảnh khi cả 6 ca multi-turn hiện đều PASS.
+
+**Kết quả thực nghiệm v4 và v5.** Cả hai run có 20/20 ca được đo và 0 lỗi provider; hash khớp bản chụp trong `runs/base_artifacts/v4/` và `v5/`.
+
+| Version | Case ID | Failure Type / Observed Mismatch | Actual Tool Calls | What Failed — nguyên văn |
+|---|---|---|---|---|
+| v4 | `R10_missing_handle` | `missing_info` / `missing_tool_call` | `[{"name":"timeline","args":{"screenname":"elonmusk","limit":5}}]` | `missing tool call clarify`<br>`extra tool call timeline` |
+
+- **v4 (19/20):** câu hỏi R10 là "Tóm tắt 5 tweet mới nhất giúp mình", không nêu tài khoản. Ở v3 model gọi đúng `clarify(response_type=text)`. Ở v4, khi chỉ thêm 4 tool mới, model gọi `timeline(screenname="elonmusk")`.
+  - Tài khoản `elonmusk` không xuất hiện trong câu hỏi, mà nằm trong danh sách "Known mappings: Sam Altman=sama, Elon Musk=elonmusk, Andrej Karpathy=karpathy" ở mô tả tham số `screenname` (thêm từ v2).
+  - Giả thuyết: danh sách ánh xạ mẫu này là một "gợi ý đoán" tiềm ẩn. Khi tool list dài hơn (14 tool), quy tắc "không đoán tài khoản" trong prompt bị lấn át. 19 ca còn lại không đổi so với v3, và trong cả run v4 không có lời gọi nào tới 4 tool mới (bộ base không có ca dành cho chúng).
+- **v5 (20/20):** R10 quay lại gọi `clarify`, R13 vẫn gọi đủ `lookup` và `social_search`, không có lời gọi thừa.
+  - Tuy nhiên thay đổi của v5 (bỏ ràng buộc "một bước / một tool") **không nhắm vào R10**. Với một run mỗi version, không thể kết luận v5 đã sửa nguyên nhân của R10.
+  - Hướng thử tiếp theo (chưa chạy): bỏ danh sách "Known mappings" khỏi mô tả `screenname`, hoặc chạy lặp v4/v5 nhiều lần để đo tỉ lệ R10 đoán tài khoản.
 
 Giới hạn phép đo: mỗi version mới có một run, không đủ để kết luận nhân quả hay độ ổn định thống kê. Scorer so khớp tool và tập đối số kỳ vọng, không chấm chất lượng nội dung trả lời hay kết quả API; ca `no_tool` chỉ kiểm tra không có lời gọi tool. Các quan sát trên không chứng minh nhiệm vụ research đã hoàn tất hoặc hệ thống an toàn trong mọi tình huống.
 
@@ -173,7 +186,7 @@ Tìm được **3 bug** trong tool có sẵn bằng cách thử input biên mà 
 | 2 | `timeline`, `social_search` | `items[: int(limit or 5)]`: `limit=-1` thành `items[:-1]` (mất bài cuối); `limit="abc"` raise `ValueError` làm hỏng cả lời gọi | Trả thiếu kết quả âm thầm, hoặc lỗi cả tool | Helper `as_int()` trong `tools/_shared.py`: không phải số hoặc ≤ 0 thì dùng mặc định 5 | `test_regression_timeline_negative_limit_does_not_drop_last_item`, `test_regression_non_numeric_limit_uses_default_instead_of_failing` (2 tool) |
 | 3 | `format` | Item không phải object (ví dụ chuỗi) gây `AttributeError` **raise ra ngoài tool** | Vi phạm contract "tool trả error dict, không raise" | Bọc `render_digest` trong `try/except`, trả `err("render_digest", exc)` | `test_regression_format_non_object_item_returns_error_dict_instead_of_raising` |
 
-Các bản sửa bug chỉ nằm trong code tool (`tools/*/tool.py`), không đổi `system_prompt.md` hay phần tool có sẵn trong `tools.yaml`. Riêng việc khai báo 4 tool mới ở cuối `tools.yaml` làm `tools_hash` khác bản v3 (`a01960b8f782`), nên version cuối cần được chạy lại sau khi merge tool mới.
+Các bản sửa bug chỉ nằm trong code tool (`tools/*/tool.py`), không đổi `system_prompt.md` hay phần tool có sẵn trong `tools.yaml`. Riêng việc khai báo 4 tool mới ở cuối `tools.yaml` làm `tools_hash` khác bản v3 (`a01960b8f782`), nên A đã chạy lại base eval với bản `tools.yaml` này: v4 (19/20) và v5 (20/20), xem B1/B2.
 
 ### B7. Small Local Model Challenge (bonus)
 

@@ -55,7 +55,7 @@ Nguyên tắc chung của 4 tool:
 - Kết quả `pytest` (chạy trong `starter_v0/`): `140 passed, 0 failed, 0 skipped`. Riêng `tests/test_tool_contract.py`: 75 passed.
 - Kiểm chứng ngược: chạy 12 regression test trên code tool gốc thì 9 FAIL, sau khi sửa thì 12 PASS.
 - Smoke test API thật (2026-11-10): `wiki` (en, vi), `hn_search` (popular, latest), `github_search` đều trả kết quả hợp lệ.
-- Commit/PR:
+- Commit/PR: `bba92d1` (tool, test, sửa bug) trên nhánh `b-tool`. Base eval sau khi thêm tool: v4 19/20, v5 20/20 (người A chạy).
 - AI/công cụ đã dùng và cách tự kiểm tra kết quả: Dùng Claude Code (Claude) hỗ trợ viết code tool, test và đọc code tool có sẵn để tìm bug. Tự kiểm tra bằng 4 cách:
   - Chạy toàn bộ `pytest` offline.
   - Chạy regression test trên code gốc để xác nhận test thật sự bắt được bug.
@@ -68,5 +68,4 @@ Nguyên tắc chung của 4 tool:
 - Phụ thuộc còn lại:
   - Bonus "Hơn 3 tool mới" cần mỗi tool có ≥ 1 eval case trong `data/eval_group.json` (người C).
   - Có thể cần thêm rule routing cho tool mới trong `system_prompt.md` (người A).
-  - Version cuối cần chạy lại base eval sau khi merge, vì `tools_hash` đã đổi.
 - Hạn chế: `github_search` dùng API không xác thực nên bị giới hạn khoảng 10 request/phút. `wiki` chỉ hỗ trợ `en` và `vi`.
