@@ -75,6 +75,17 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 | v2 | `starter_v0/artifacts/tools.yaml` (mô tả tool có sẵn) | Hợp đồng mô tả tool và tham số tường minh (tách query khỏi topic/timeframe, chuẩn hóa format handle) giúp chọn đúng đối số (R13) mà không cần đổi schema hay prompt. | Case Acc: 95% (19/20)<br>Routing: 100%<br>Argument: 95%<br>Multiturn: 100% | Case Acc: 95% (19/20)<br>Routing: 100%<br>Argument: 95%<br>Multiturn: 100% | [v2 run](../../starter_v0/runs/v2_B_base_openrouter_20261110T180621384845.json) |
 | v3 | `starter_v0/artifacts/system_prompt.md` | Quy định thứ tự ưu tiên trong prompt (prompt precedence): yêu cầu đăng chưa duyệt phải đi qua bước xác nhận (yes_no) trước quy tắc thiếu thông tin (text), giúp sửa lỗi response_type ở R12 mà không gây hồi quy. | Case Acc: 95% (19/20)<br>Routing: 100%<br>Argument: 95%<br>Multiturn: 100% | Case Acc: 100% (20/20)<br>Routing: 100%<br>Argument: 100%<br>Multiturn: 100% | [v3 run](../../starter_v0/runs/v3_B_base_openrouter_20261110T180852592619.json) |
 
+Ghi chú về run: file `starter_v0/runs/v0_B_base_openrouter_20261110T180937971787.json` mang nhãn `v0` nhưng có hash của v3 (`v0+p04552040eeb2+ta01960b8f782`, chạy lúc 18:09 sau run v3 lúc 18:08) và đạt 20/20. Đây là lần chạy lặp lại v3 bị đặt nhầm nhãn, **không phải baseline**. Baseline v0 hợp lệ duy nhất là `v0_B_base_openrouter_20261110T180041253555.json` (`v0+peb1c8179815b+te69bc53ed884`, 15/20). Run Gemini `v0_B_base_gemini_...` bị loại vì `provider_error_cases=5`.
+
+Đang chờ chạy v4–v5: sau khi B thêm 4 tool mới vào cuối `tools.yaml`, `tools_hash` của bản nộp đổi thành `a078bdccfe27`, không còn khớp run v3. Kế hoạch và giả thuyết đã ghi **trước khi chạy** trong [`runs/base_experiment_plan.md`](../../starter_v0/runs/base_experiment_plan.md):
+
+- v4 chỉ thêm tool, giữ prompt v3. Mục tiêu: kiểm tra không hồi quy.
+- v5 bỏ chỉ dẫn ép một bước / một tool.
+
+Snapshot nằm ở `runs/base_artifacts/v4/` và `runs/base_artifacts/v5/`. Hai dòng v4, v5 sẽ được thêm vào bảng trên và vào `version_log.csv` sau khi có run hợp lệ.
+
+Lần chạy v4/v5 đầu tiên (commit `f6c88c6`) đã bị **loại và xóa khỏi `runs/`**: hai file `v4_..._185209274464.json` và `v5_..._185323757079.json` đều mang hash v3 (`p04552040eeb2`, `ta01960b8f782`). Nguyên nhân là máy chạy eval lúc đó chưa có 4 tool mới và prompt v5. Thực chất đây là hai lần chạy lặp lại v3 (đều 20/20) bị đặt nhầm nhãn, nên không dùng làm bằng chứng cho v4/v5. Có thể xem lại hai file trong lịch sử git ở commit `f6c88c6`.
+
 ### B2. Failure Analysis
 
 Nguồn baseline: [run v0 OpenRouter](../../starter_v0/runs/v0_B_base_openrouter_20261110T180041253555.json), model `openai/gpt-4o-mini`: 20/20 ca được đo, 0 lỗi provider, 15 PASS và 5 FAIL. Bảng dưới liệt kê toàn bộ 5 FAIL của v0; `Failure Type` giữ nguyên nhãn dataset/run, còn `Observed Mismatch` mô tả sai lệch thực tế của scorer. Nguyên nhân là giả thuyết phân tích; kết quả v1/v2 được đối chiếu trực tiếp từ run JSON.
@@ -132,11 +143,15 @@ Lấy từ `starter_v0/transcripts/*.transcript.json`.
 
 | Item | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Tool mới (`tools/<tên>/`) |  |  |  |
-| Unit test tool mới (≥ 3 test/tool) | `pytest` output (0 failed) |  |  |
+| Tool mới (`tools/<tên>/`) | [`tools/wiki/`](../../starter_v0/tools/wiki/), [`tools/hn_search/`](../../starter_v0/tools/hn_search/), [`tools/github_search/`](../../starter_v0/tools/github_search/), [`tools/cite/`](../../starter_v0/tools/cite/) (mỗi folder có `tool.py` + `TOOL.md`); đăng ký trong [`tools/__init__.py`](../../starter_v0/tools/__init__.py) và khối `# ---- Group tools (B) ----` cuối [`artifacts/tools.yaml`](../../starter_v0/artifacts/tools.yaml) | 4 tool không cần API key: `wiki` (Wikipedia, kiến thức nền), `hn_search` (Hacker News, thảo luận cộng đồng dev), `github_search` (repo mã nguồn mở), `cite` (định dạng trích dẫn APA/MLA/IEEE, chạy local). Smoke test gọi API thật ngày 2026-11-10 trả kết quả đúng cho cả 3 tool live. `pytest tests/test_tool_contract.py`: 75 passed | Mỗi description ghi rõ khi nào dùng / không dùng so với `lookup`, `social_search`, `papers`, `fetch`, `format`. Input xấu (query rỗng, enum sai) trả error dict **không gọi mạng**; `limit` ép về int có chặn trên. GitHub giới hạn ~10 request/phút khi không xác thực → trả `HTTPError` dict. `cite` không bịa tác giả/ngày/URL |
+| Unit test tool mới (≥ 3 test/tool) | [`tests/test_tools_todo.py`](../../starter_v0/tests/test_tools_todo.py); `pytest` toàn suite: **140 passed, 0 failed, 0 skipped** | `wiki` 5 test (13 trường hợp parametrize), `hn_search` 4 (5), `github_search` 5 (6), `cite` 7 (8). Mỗi tool có happy path (assert cả request gửi đi lẫn kết quả map), input xấu từ model, và nhánh lỗi (HTTP 429/500/403, timeout) | Test chạy offline: mọi HTTP mock bằng `fake_http`, không dùng key thật |
 | UI (lệnh chạy + link dùng thử) |  |  |  |
 
 Tool unit tests: số test đã viết, và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
+
+- `tests/test_tools_todo.py` có 58 test (tính cả parametrize): 14 stub có sẵn của starter, 32 test cho 4 tool mới, 12 regression test.
+- Ví dụ lỗi eval không bắt được: nếu model gọi `send(text=..., confirmed="false")` (chuỗi thay vì boolean), eval chỉ so tên tool và args nên không thấy gì bất thường. Nhưng code cũ dùng `if not confirmed`, mà chuỗi `"false"` là truthy, nên **tin nhắn vẫn được gửi lên Telegram khi user chưa xác nhận**. Test `test_regression_send_non_true_confirmation_does_not_call_network` bắt được lỗi này (xem B5).
+- Smoke test thật cũng bắt một lỗi trình bày của `cite`: tác giả `Vaswani et al.` bị in thành `et al..`. Đã sửa và thêm `test_cite_author_ending_with_period_is_not_doubled`.
 
 ### B5. Bonus Evidence
 
@@ -145,11 +160,21 @@ Chỉ điền nếu nhóm làm bonus (ghi riêng, tối đa 10 điểm). Tool c�
 | Bonus | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
 | Small Local Model | xem B7 |  |  |
-| Hơn 3 tool mới (≥ 4) |  |  |  |
+| Hơn 3 tool mới (≥ 4) | 4 folder `tools/wiki/`, `tools/hn_search/`, `tools/github_search/`, `tools/cite/`; test trong `tests/test_tools_todo.py`; eval case route tới từng tool: xem B3 (`data/eval_group.json`, người C) | Mỗi tool đủ `TOOL.md` (frontmatter đúng contract), đăng ký registry + `tools.yaml`, ≥ 4 test/tool | Còn chờ: mỗi tool cần ≥ 1 eval case trong `eval_group.json` (C phụ trách) và rule routing trong `system_prompt.md` nếu cần (A phụ trách) |
 | `send` gửi thật lên Telegram sau xác nhận | transcript |  |  |
-| Test challenge (0 skipped / regression test) | `pytest` output |  |  |
+| Test challenge (0 skipped / regression test) | `pytest` output: **140 passed, 0 failed, 0 skipped** | Đạt cả hai điều kiện: toàn suite 0 skipped (14 stub đã viết hết) **và** có regression test cho 3 bug trong tool có sẵn | Regression test được kiểm chứng ngược: chạy trên code gốc thì **9 FAIL**, sau khi sửa thì PASS |
 
 Test challenge: số bug tìm được trong tool có sẵn (nếu có), cách sửa, và test regression tương ứng.
+
+Tìm được **3 bug** trong tool có sẵn bằng cách thử input biên mà model hay gửi:
+
+| # | Tool | Bug (code gốc) | Hậu quả | Cách sửa | Regression test |
+|---|---|---|---|---|---|
+| 1 | `send` | `if not confirmed:` coi chuỗi `"false"`, `"no"`, `"0"` (và số `1`) là đã xác nhận | **Gửi Telegram khi user chưa duyệt**, phá boundary xác nhận | `_is_confirmed()`: chỉ chấp nhận `True` hoặc chuỗi `"true"` | `test_regression_send_non_true_confirmation_does_not_call_network` (7 trường hợp), `test_regression_send_string_true_still_sends` |
+| 2 | `timeline`, `social_search` | `items[: int(limit or 5)]`: `limit=-1` thành `items[:-1]` (mất bài cuối); `limit="abc"` raise `ValueError` làm hỏng cả lời gọi | Trả thiếu kết quả âm thầm, hoặc lỗi cả tool | Helper `as_int()` trong `tools/_shared.py`: không phải số hoặc ≤ 0 thì dùng mặc định 5 | `test_regression_timeline_negative_limit_does_not_drop_last_item`, `test_regression_non_numeric_limit_uses_default_instead_of_failing` (2 tool) |
+| 3 | `format` | Item không phải object (ví dụ chuỗi) gây `AttributeError` **raise ra ngoài tool** | Vi phạm contract "tool trả error dict, không raise" | Bọc `render_digest` trong `try/except`, trả `err("render_digest", exc)` | `test_regression_format_non_object_item_returns_error_dict_instead_of_raising` |
+
+Các bản sửa bug chỉ nằm trong code tool (`tools/*/tool.py`), không đổi `system_prompt.md` hay phần tool có sẵn trong `tools.yaml`. Riêng việc khai báo 4 tool mới ở cuối `tools.yaml` làm `tools_hash` khác bản v3 (`a01960b8f782`), nên version cuối cần được chạy lại sau khi merge tool mới.
 
 ### B7. Small Local Model Challenge (bonus)
 
