@@ -18,3 +18,14 @@ Limitations: one run per version, no statistical confidence claim; subset matchi
 v1 and v2 both scored 19/20. In both runs R12 called clarify with response_type=text instead of yes_no; no send was attempted. Description changes alone did not resolve the overlapping prompt rules. The v3 experiment therefore replaces the planned independent-source experiment with a prompt-precedence experiment: explicitly route unapproved publication requests to the confirmation rule before applying the general missing-information rule, and limit the text rule to non-publication requests. All other instructions and v2 tool declarations stay unchanged. Hypothesis: removing this overlap fixes the remaining response_type mismatch without regressions.
 
 The single-tool instruction is intentionally not changed in this experiment to avoid a second mechanism. It remains a known limitation for a later experiment even though the base multi-source case currently passes. No claims about a tested multi-source improvement will be made for v3.
+
+## v4 and v5 plan, recorded after v3 and before either run
+
+Context: B merged four new group tools (`wiki`, `hn_search`, `github_search`, `cite`) at the end of `artifacts/tools.yaml`, so the submitted `tools_hash` no longer matches run v3. The run labelled `v0_B_base_openrouter_20261110T180937971787.json` carries v3 hashes (`p04552040eeb2`, `ta01960b8f782`). It is a repeat of v3 under a wrong label and is not used as v0 evidence.
+
+Same fixed setup as above: OpenRouter, `openai/gpt-4o-mini`, temperature 0, 20 unchanged base cases. Snapshots saved before running under `runs/base_artifacts/v4/` and `runs/base_artifacts/v5/`.
+
+5. v4 (tools.yaml only: add the four group tools; existing descriptions and the v3 prompt unchanged). Expected artifact version `v4+p04552040eeb2+ta078bdccfe27`. Hypothesis: adding four tools with explicit when/when-not descriptions does not distract routing on the base suite, so v4 keeps 20/20 without regressions. Run with `--system-prompt runs/base_artifacts/v3/system_prompt.md`, because `artifacts/system_prompt.md` already holds the v5 prompt.
+6. v5 (prompt only: replace the forced single-step / single-tool instruction, the remaining deliberate starter instruction). Expected artifact version `v5+pe1ddb4bfa9ee+ta078bdccfe27`. Hypothesis: allowing every needed tool for requests with several independent sources, while forbidding unneeded tools and premature format/cite calls, keeps 20/20 and removes the conflict between the prompt and multi-source requests such as R13, without adding unnecessary calls. Run with default artifact paths.
+
+Comparison: v4 vs v3 (effect of the new tools), v5 vs v4 (effect of the prompt change). If v4 regresses, inspect the failed cases for routing to a new tool before running v5.
