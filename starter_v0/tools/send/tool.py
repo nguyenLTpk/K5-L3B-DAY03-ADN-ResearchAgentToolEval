@@ -8,8 +8,16 @@ import requests
 from tools._shared import TIMEOUT, err
 
 
+def _is_confirmed(value: Any) -> bool:
+    # Bug fix (B): `if not confirmed` treated the string "false" as truthy and sent without approval.
+    # Only a real boolean True or the literal string "true" counts as confirmation.
+    if isinstance(value, bool):
+        return value
+    return isinstance(value, str) and value.strip().lower() == "true"
+
+
 def send_telegram(text: str = "", confirmed: bool = False) -> dict[str, Any]:
-    if not confirmed:
+    if not _is_confirmed(confirmed):
         return {
             "tool": "send_telegram",
             "status": "needs_confirmation",

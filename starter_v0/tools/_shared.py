@@ -15,6 +15,23 @@ def err(tool: str, exc: Exception) -> dict[str, Any]:
     return {"tool": tool, "error": type(exc).__name__, "message": str(exc)}
 
 
+def as_int(value: Any, default: int, lo: int = 1, hi: int | None = None) -> int:
+    """Coerce a model-supplied count to int.
+
+    Models sometimes send counts as strings ("5"), zero, negatives or junk ("abc").
+    Non-numeric or below `lo` -> `default`; above `hi` -> `hi`.
+    """
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return default
+    if number < lo:
+        return default
+    if hi is not None and number > hi:
+        return hi
+    return number
+
+
 def domain(url: str) -> str:
     try:
         return urlparse(url).netloc.replace("www.", "")
