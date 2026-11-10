@@ -6,7 +6,7 @@
 |---|---|
 | Họ tên | Nguyen Huu Manh |
 | MSSV | 2A202604015 |
-| Email | Chưa cung cấp |
+| Email | nghmanh04@gmail.com |
 | Nhóm và lớp | ADN — L3B |
 | Vai trò | D — UI, demo và tổng hợp báo cáo |
 
