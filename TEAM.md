@@ -5,7 +5,8 @@
 - Tên nhóm: ADN
 - Lớp: L3B
 - Repo nhóm: `K5-L3B-DAY03-ADN-ResearchAgentToolEval` (xem [SUBMISSION.md](SUBMISSION.md))
-- URL repo, nhánh nộp, commit chốt: https://github.com/nguyenLTpk/K5-L3B-DAY03-ADN-ResearchAgentToolEval · nhánh `main` · commit chốt:
+- Demo UI (Quick Tunnel, link tạm thời): https://remaining-processor-sell-lonely.trycloudflare.com (cần giữ app và cloudflared đang chạy).
+- URL repo, nhánh nộp, commit chốt: https://github.com/nguyenLTpk/K5-L3B-DAY03-ADN-ResearchAgentToolEval · nhánh main · commit chốt: chưa chốt sau các thay đổi UI/báo cáo.
 
 ## Thành viên
 

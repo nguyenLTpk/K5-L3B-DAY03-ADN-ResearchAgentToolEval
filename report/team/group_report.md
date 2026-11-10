@@ -8,7 +8,7 @@
 
 ## 1. Thông tin nhóm
 
-- Tên nhóm:
+- Tên nhóm: ADN
 - Thành viên và phân công: xem [TEAM.md](../../TEAM.md) (Lê Hải Anh: Phụ trách Role A - Prompt & Tối ưu v0–v3, hoàn thiện B1, B2)
 - Provider/model dùng cho v0–v3: OpenRouter (`openai/gpt-4o-mini`, temperature 0)
 
@@ -16,37 +16,43 @@
 
 ### A1. Agent này làm được gì
 
-> 1–2 câu mô tả agent dùng để làm gì (cho team khác hiểu nhanh).
+ADN Research Agent hỗ trợ tra cứu nền tảng bằng Wikipedia, Hacker News, GitHub, web và X/Twitter; đọc URL đã được cung cấp, tra cứu chính sách nội bộ và định dạng trích dẫn hoặc digest. Agent hỏi lại khi thiếu dữ liệu cần thiết, giữ ngữ cảnh qua nhiều lượt và yêu cầu xác nhận rõ ràng trước khi gửi nội dung lên Telegram.
 
-Ví dụ: "Research agent: tìm tin theo từ khóa / theo tài khoản, đọc URL, tổng hợp thành digest, và gửi lên Telegram khi được xác nhận."
+Cách chạy UI cục bộ từ thư mục starter_v0:
 
-**Cách chạy UI:**
+    python -m pip install -r requirements.txt
+    streamlit run app.py
 
-> Lệnh chạy UI (ví dụ `streamlit run app.py`) và dependency đã thêm vào `starter_v0/requirements.txt`.
+Poster giới thiệu: [poster.html](poster.html).
 
-**Link dùng thử (deploy):**
-
-> Dán link public để team khác mở thử ngay. Cách deploy nhanh bằng Cloudflare Tunnel xem README. Nếu deploy Vercel/Streamlit Cloud thì dán link đó.
->
-> URL:
+Local: http://localhost:8501. Demo public qua Cloudflare Quick Tunnel: https://remaining-processor-sell-lonely.trycloudflare.com (URL tạm thời, hoạt động khi app và cloudflared trên máy demo còn chạy). UI mặc định chọn Ollama với qwen2.5:1.5b, không cần model key. Các tool wiki, hn_search, github_search và cite không cần key; tool/provider cần Tavily, Firecrawl, RapidAPI hoặc cloud-model key vẫn cần cấu hình trong starter_v0/.env.
 
 ### A2. Tool agent có
 
-> Liệt kê các tool agent đang dùng (gồm tool mới nhóm tự thêm). Mỗi tool 1 dòng: tên + làm được gì.
-
 | Tên tool | Làm được gì | Tool mới nhóm thêm? |
 |---|---|---|
-| clarify | hỏi lại người dùng khi thiếu thông tin | không |
-|  |  |  |
-|  |  |  |
+| clarify | Hỏi thông tin thiết yếu còn thiếu hoặc xin xác nhận trước khi đăng | Không |
+| timeline | Lấy bài gần đây từ tài khoản X/Twitter đã xác định | Không |
+| social_search | Tìm bài X/Twitter theo chủ đề | Không |
+| lookup | Tìm thông tin hoặc tin tức trên web | Không |
+| fetch | Đọc URL bài viết đã được cung cấp | Không |
+| format | Gom các item đã thu thập thành digest Markdown | Không |
+| send | Gửi nội dung lên Telegram sau khi người dùng duyệt chính xác nội dung | Không |
+| policy | Tìm trong các chính sách nội bộ | Không |
+| papers | Tìm paper trên arXiv | Không |
+| paper_text | Tải và trích văn bản từ PDF arXiv đã biết | Không |
+| wiki | Tra cứu bách khoa trên Wikipedia | Có |
+| hn_search | Tìm bài và thảo luận trên Hacker News | Có |
+| github_search | Tìm repository mã nguồn mở trên GitHub | Có |
+| cite | Định dạng nguồn đã có theo APA, MLA hoặc IEEE | Có |
 
 ### A3. Câu hỏi mẫu để thử
 
-> 3–5 câu hỏi/yêu cầu mẫu để team khác tự thử agent ngay.
-
-1.
-2.
-3.
+1. Tìm 2 bài mới nhất trên Hacker News về SQLite.
+2. Tìm 3 repository GitHub về DuckDB có nhiều sao nhất.
+3. Tra Wikipedia tiếng Việt về mã QR, tối đa 2 trang.
+4. Định dạng nguồn Python Tutorial theo IEEE: https://docs.python.org/3/tutorial/.
+5. Đăng bản nháp sau lên Telegram giúp mình: Nhóm sẽ đọc tài liệu vào thứ Sáu. (Agent phải xin xác nhận trước khi gửi.)
 
 ## 3. Giải pháp
 
@@ -173,7 +179,7 @@ Run đo đủ 10/10 case, 0 lỗi provider và 9/10 case PASS. Điểm chọn to
 |---|---|---|---|
 | Tool mới (`tools/<tên>/`) | [`tools/wiki/`](../../starter_v0/tools/wiki/), [`tools/hn_search/`](../../starter_v0/tools/hn_search/), [`tools/github_search/`](../../starter_v0/tools/github_search/), [`tools/cite/`](../../starter_v0/tools/cite/) (mỗi folder có `tool.py` + `TOOL.md`); đăng ký trong [`tools/__init__.py`](../../starter_v0/tools/__init__.py) và khối `# ---- Group tools (B) ----` cuối [`artifacts/tools.yaml`](../../starter_v0/artifacts/tools.yaml) | 4 tool không cần API key: `wiki` (Wikipedia, kiến thức nền), `hn_search` (Hacker News, thảo luận cộng đồng dev), `github_search` (repo mã nguồn mở), `cite` (định dạng trích dẫn APA/MLA/IEEE, chạy local). Smoke test gọi API thật ngày 2026-11-10 trả kết quả đúng cho cả 3 tool live. `pytest tests/test_tool_contract.py`: 75 passed | Mỗi description ghi rõ khi nào dùng / không dùng so với `lookup`, `social_search`, `papers`, `fetch`, `format`. Input xấu (query rỗng, enum sai) trả error dict **không gọi mạng**; `limit` ép về int có chặn trên. GitHub giới hạn ~10 request/phút khi không xác thực → trả `HTTPError` dict. `cite` không bịa tác giả/ngày/URL |
 | Unit test tool mới (≥ 3 test/tool) | [`tests/test_tools_todo.py`](../../starter_v0/tests/test_tools_todo.py); `pytest` toàn suite: **140 passed, 0 failed, 0 skipped** | `wiki` 5 test (13 trường hợp parametrize), `hn_search` 4 (5), `github_search` 5 (6), `cite` 7 (8). Mỗi tool có happy path (assert cả request gửi đi lẫn kết quả map), input xấu từ model, và nhánh lỗi (HTTP 429/500/403, timeout) | Test chạy offline: mọi HTTP mock bằng `fake_http`, không dùng key thật |
-| UI (lệnh chạy + link dùng thử) |  |  |  |
+| UI (lệnh chạy + link dùng thử) | [app.py](../../starter_v0/app.py), [requirements.txt](../../starter_v0/requirements.txt); lệnh tại A1 | Streamlit và Cloudflare Quick Tunnel trả HTTP 200; Ollama/qwen2.5:1.5b đã cài/tải; smoke CLI qua cùng `chat.run_model_tool_loop` gọi `wiki` thành công | Chưa xác nhận trọn luồng bằng thao tác trình duyệt; keys cho provider/tool trả phí chưa cấu hình |
 
 Tool unit tests: số test đã viết, và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
 
@@ -206,47 +212,56 @@ Các bản sửa bug chỉ nằm trong code tool (`tools/*/tool.py`), không đ�
 
 ### B7. Small Local Model Challenge (bonus)
 
-Chỉ điền nếu nhóm làm bonus này.
+Chạy cùng bộ base 20 case trên prompt/tools v5 cuối cùng, provider Ollama không cần model key. Cả bốn run có measured_cases=20 và provider_error_cases=0.
 
 | Version | Model (provider) | Prompt/Tools | case_accuracy | tool_routing | argument | multiturn | Run File |
-|---|---|---|---|---|---|---|---|
-| v3 | (cloud) | v3 |  |  |  |  |  |
-| v3-<model> | (ollama) | v3 |  |  |  |  |  |
-| v3-<model> | (ollama) | v3 |  |  |  |  |  |
-| v4-local |  |  |  |  |  |  |  |
-| v5-local |  |  |  |  |  |  |  |
+|---|---|---|---:|---:|---:|---:|---|
+| v5-cloud | openai/gpt-4o-mini (OpenRouter) | v5 | 100% | 100% | 100% | 100% | [v5 cloud run](../../starter_v0/runs/v5_B_base_openrouter_20261110T190946471016.json) |
+| v5-local-qwen2.5:1.5b | Qwen2.5 1.5B (Ollama) | v5 | 35% | 55% | 35% | 33.3% | [base run](../../starter_v0/runs/v5-qwen2.5-1.5b_B_base_ollama_20261111T001716212966.json) |
+| v5-local-qwen2.5:0.5b | Qwen2.5 0.5B (Ollama) | v5 | 15% | 30% | 15% | 0% | [base run](../../starter_v0/runs/v5-qwen2.5-0.5b_B_base_ollama_20261111T001901516754.json) |
+| v6-local-qwen2.5:1.5b | Qwen2.5 1.5B (Ollama) | [local prompt v6](../../starter_v0/artifacts/system_prompt_local_v6.md) + [local tools](../../starter_v0/artifacts/tools_local.yaml) | 30% | 45% | 30% | 33.3% | [round 1 run](../../starter_v0/runs/v6-local-qwen2.5-1.5b_B_base_ollama_20261111T002013205741.json) |
+| v7-local-qwen2.5:1.5b | Qwen2.5 1.5B (Ollama) | [local prompt v7](../../starter_v0/artifacts/system_prompt_local_v7.md) + [local tools](../../starter_v0/artifacts/tools_local.yaml) | 35% | 40% | 35% | 33.3% | [round 2 run](../../starter_v0/runs/v7-local-qwen2.5-1.5b_B_base_ollama_20261111T002335288041.json) |
 
-Lỗi đặc thù của model nhỏ (đếm từ run JSON):
+Các nhóm lỗi ở run base qwen2.5:1.5b:
 
 | Failure Pattern | Count | Example Case | Fix Tried | Helped? |
-|---|---|---|---|---|
-| wrong / hallucinated tool |  |  |  |  |
-| invalid JSON args (`_invalid_json_arguments`) |  |  |  |  |
-| no tool call / answered directly |  |  |  |  |
-| missed `clarify` |  |  |  |  |
-| repeated / unnecessary calls |  |  |  |  |
+|---|---:|---|---|---|
+| wrong / hallucinated tool | 4 | R02 chọn timeline thay vì social_search | v6 mô tả rõ hợp đồng tool; v7 thêm bảng route | Không: routing giảm từ 55% xuống 40% ở v7 |
+| invalid JSON args | 0 | Không ghi nhận | Không cần | N/A |
+| no tool call / answered directly | 9 | R03 không gọi lookup | v6 nhắc gọi tool cho thông tin bên ngoài | Không: case accuracy v6 giảm 35% xuống 30% |
+| missed clarify | 3 | R10, R11, R12 | v6 làm rõ clarify text/yes_no; v7 lặp quy tắc | Không: các lỗi vẫn còn ở v7 |
+| repeated / unnecessary calls | 0 | Không ghi nhận | Không cần | N/A |
 
-- Cái gì giúp model nhỏ gọi tool đúng hơn nhất? Bằng chứng?
-- Bản prompt tối ưu cho local chạy trên model cloud thì sao?
-- Khi nào nhóm sẽ chọn model local thay vì cloud cho agent này?
+Không có chỉnh sửa nào giúp vượt base local qwen2.5:1.5b trong hai vòng đã đo: v6 giảm case accuracy còn 30%; v7 trở về 35% nhưng routing thấp hơn base. Model 1.5B tốt hơn model 0.5B ở bộ này (35% so với 15%), nhưng cloud v5 đạt 100%. Chỉ số đo khả năng route/args, không chứng minh chất lượng nội dung; các tool cần RapidAPI/Tavily/Firecrawl chưa có key nên kết quả thực thi của chúng chưa được đánh giá.
+
+Bằng chứng hiện có cho thấy local phù hợp khi cần chạy model không gửi prompt tới provider cloud và có sẵn Ollama; phải chấp nhận độ chính xác thấp hơn đáng kể trên eval này. Prompt local v6/v7 chưa được chạy lại trên cloud.
 
 ## 5. Khó khăn và cách xử lý
 
-> Khó khăn chính và cách nhóm xử lý. Nếu gặp lỗi kỹ thuật (provider lỗi, hết quota API, tool không chạy), mô tả lỗi và dẫn bằng chứng: run JSON, log, ảnh chụp.
-
--
+- Ở v1 và v2, R12 vẫn chọn clarify nhưng sai response_type=text thay vì yes_no. V3 làm rõ thứ tự ưu tiên xác nhận trước khi hỏi nội dung; run v3 chuyển R12 sang PASS.
+- Khi thêm bốn tool ở v4, R10 hồi quy: model đoán tài khoản elonmusk từ ví dụ trong mô tả timeline. V5 bỏ gợi ý định danh không cần thiết và làm rõ quy tắc hỏi lại; R10 trở lại PASS, đồng thời base đạt 20/20.
+- G08 bị chấm FAIL vì scorer so khớp toàn bộ object lồng nhau trong items; các trường tùy chọn rỗng làm lệch kết quả dù tool, style, title và URL đúng. Báo cáo giữ nguyên điểm theo scorer và ghi riêng kiểm tra thủ công.
+- Kết quả Hacker News ở lượt live có một tiêu đề liên quan trực tiếp SQLite và một tiêu đề cần kiểm tra thêm. Điều này cho thấy routing đúng không tự chứng minh độ liên quan của nội dung trả về; cần review nguồn.
+- UI Streamlit và Cloudflare Quick Tunnel trả HTTP 200; smoke query qua vòng lặp agent gọi wiki thành công. URL tạm thời: https://remaining-processor-sell-lonely.trycloudflare.com. Base eval local đo đủ 20 case, 0 provider error: Qwen2.5 1.5B đạt 35%, Qwen2.5 0.5B đạt 15%. Hai vòng tuning đạt lần lượt 30% và 35%, chưa vượt baseline 1.5B. Keys cho tool/provider trả phí vẫn chưa được cấu hình.
 
 ## 6. Tổng hợp đóng góp
 
-Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEAM.md) và các báo cáo cá nhân `report/team/MSSV_HoTen.md`.
+- **Lê Hải Anh (A):** baseline và các vòng tối ưu prompt/tool v0–v5; phân tích B1, B2.
+- **Lê Thanh Nguyên (B):** bốn tool mới, unit test, ba sửa lỗi hồi quy và các mục B5a/B5.
+- **Trần Văn Quang (C):** 10 eval case nhóm, run group, transcript live và mục B3/B4.
+- **Nguyễn Hữu Mạnh (D):** UI Streamlit, poster, Phần A và tổng hợp báo cáo; dựng Cloudflare Quick Tunnel https://remaining-processor-sell-lonely.trycloudflare.com; chạy base eval cho hai model local và hai vòng tuning v6/v7 (các run và metrics ở B7).
 
 ## 7. Hạn chế và hướng cải thiện — B6. Reflection
 
-- Fix nào thuộc `system_prompt.md`?
-- Fix nào thuộc `tools.yaml`?
-- Failure nào cần review thủ công thay vì chấm tự động?
-- Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào?
+- **Fix thuộc system_prompt.md:** giới hạn phạm vi, không đoán URL/tài khoản/nội dung, hỏi thiếu thông tin và đặt xác nhận đăng trước các bước khác; v5 bỏ ép một tool cho mọi tình huống nhưng vẫn cấm gọi thừa.
+- **Fix thuộc tools.yaml:** nêu rõ khi dùng/không dùng từng tool, quy ước tham số và ranh giới xác nhận cho send. Code tool riêng xử lý kiểu dữ liệu sai và trả lỗi có cấu trúc.
+- **Cần review thủ công:** chất lượng/độ liên quan của kết quả tìm kiếm; G08 vì scorer kiểm tra object lồng nhau quá chặt; hành động gửi thật cần đối chiếu nội dung và xác nhận trong transcript.
+- **Vòng tiếp theo:** cải thiện scorer để so tập con các trường được kỳ vọng trong object lồng nhau; thêm eval cho chất lượng liên quan và nhiều nguồn; chạy lặp nhiều lần để đo độ ổn định. Với local, thử các hướng ngắn hơn hoặc few-shot cho lỗi route/argument và chỉ giữ prompt khi eval tăng.
+- **Giới hạn:** mỗi version mới chạy một lần; suite chấm routing/args chứ không đánh giá đầy đủ sự thật, độ mới hoặc chất lượng nội dung. Local scores thấp hơn cloud rõ rệt và hai lần tuning chưa cải thiện baseline. Keys cho provider/tool trả phí chưa có nên các nhánh đó chưa được xác minh. Tunnel Quick Tunnel tạm thời chỉ hoạt động khi tiến trình còn chạy.
 
 ## 8. Tài liệu tham khảo
 
--
+- [Hướng dẫn và rubric của lab](../../README.md), [rubric chấm điểm](../../RUBRIC.md).
+- [Tool folder contract](../../starter_v0/tools/README.md), [system prompt](../../starter_v0/artifacts/system_prompt.md), [tool declarations](../../starter_v0/artifacts/tools.yaml).
+- [Base eval](../../starter_v0/data/eval_base.json), [group eval](../../starter_v0/data/eval_group.json), [version log](../../starter_v0/artifacts/version_log.csv).
+- Các run v0–v7, run suite group và transcript được liên kết tại B1–B4/B7; file bằng chứng nằm trong starter_v0/runs/ và starter_v0/transcripts/. Prompt local: [v6](../../starter_v0/artifacts/system_prompt_local_v6.md), [v7](../../starter_v0/artifacts/system_prompt_local_v7.md), tool snapshot: [tools_local.yaml](../../starter_v0/artifacts/tools_local.yaml).
