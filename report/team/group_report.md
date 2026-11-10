@@ -137,19 +137,35 @@ Giới hạn phép đo: mỗi version mới có một run, không đủ để k�
 
 ### B3. Team Eval Cases
 
-Liệt kê đúng 10 case trong `starter_v0/data/eval_group.json` (5 single turn + 5 multi turn).
+Phụ trách phần C là Trần Văn Quang. [Bộ eval nhóm](../../starter_v0/data/eval_group.json) gồm 5 case một lượt (G01–G05) và 5 case nhiều lượt (G06–G10). [Run suite `group`](../../starter_v0/runs/v5_B_group_openrouter_20261110T193140379550.json) dùng OpenRouter, model `openai/gpt-4o-mini` và artifact `v5+pe1ddb4bfa9ee+ta078bdccfe27`.
+
+Run đo đủ 10/10 case, 0 lỗi provider và 9/10 case PASS. Điểm chọn tool 100%, đối số 90% và nhiều lượt 80% (4/5). Cả bốn tool mới của B đều có case chọn đúng tool.
 
 | Case ID | What It Tests | Expected Tool/Behavior | Result |
 |---|---|---|---|
-|  |  |  |  |
+| `G01_wiki_vi` | Tra cứu bách khoa bằng tiếng Việt | `wiki(lang="vi", limit=2)` | PASS |
+| `G02_hn_latest` | Tìm bài mới nhất về SQLite trên Hacker News | `hn_search(query="SQLite", sort="latest", limit=2)` | PASS |
+| `G03_github_stars` | Tìm repo DuckDB và xếp theo sao | `github_search(query="DuckDB", sort="stars", limit=3)` | PASS |
+| `G04_cite_ieee` | Định dạng nguồn có sẵn theo IEEE | Chỉ gọi `cite(style="ieee")` | PASS |
+| `G05_cite_missing_sources` | Danh sách nguồn chưa được cung cấp | `clarify(response_type="text")` | PASS |
+| `G06_wiki_keep_topic` | Giữ chủ đề, nhận ngôn ngữ và số lượng mới | `wiki(query="mã QR", lang="vi", limit=1)` | PASS |
+| `G07_two_research_sources` | Tra hai nguồn trong cùng lượt, giữ chủ đề DuckDB | `hn_search(sort="latest", limit=2)` và `github_search(sort="stars", limit=2)`, cùng `query="DuckDB"` | PASS |
+| `G08_cite_switch_style` | Chuyển APA sang MLA, giữ tiêu đề và URL từ lượt trước | `cite(style="mla")` với nguồn SQLite đã cung cấp | FAIL (`wrong_arg_value`). Model chọn đúng tool, kiểu MLA, tiêu đề và URL. So khớp nguyên object trong `items` lệch do ba trường tùy chọn `source`, `author`, `date` rỗng. |
+| `G09_cancel_telegram` | Hủy yêu cầu gửi ở lượt cuối | Phản hồi trực tiếp, không gọi tool | PASS |
+| `G10_draft_is_not_approval` | Yêu cầu đăng bản nháp khi chưa xác nhận | `clarify(response_type="yes_no")`, chưa gọi `send` | PASS |
+
+Ở G08, kiểm tra thủ công xác nhận model đã giữ đúng dữ liệu nguồn. Điểm báo cáo giữ theo scorer. Bộ eval nhiều lượt chấm phản hồi cho lượt cuối với các lượt trước làm ngữ cảnh. Chất lượng nội dung trả về được xem riêng ở B4.
 
 ### B4. Live Chat Evidence
 
-Lấy từ `starter_v0/transcripts/*.transcript.json`.
+[Transcript 4 lượt](../../starter_v0/transcripts/v5_openrouter_20261110T193127740264.transcript.json) được tạo bằng `chat.py` với OpenRouter, model `openai/gpt-4o-mini` và artifact `v5+pe1ddb4bfa9ee+ta078bdccfe27`, trùng với run nhóm.
 
 | Turn | User Request | Tool Calls | Version Evidence | Outcome |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 1 | Định dạng nguồn SQLite Documentation theo IEEE. | `cite(style="ieee")` | v5, lượt 1 | `answered`. Agent trả về trích dẫn với tiêu đề và URL đã cung cấp. |
+| 2 | Tìm hai bài mới nhất trên Hacker News khi chưa nêu chủ đề. | `clarify(response_type="text")` | v5, lượt 2 | `waiting_for_user`. Agent hỏi chủ đề. |
+| 3 | Bổ sung chủ đề SQLite, giữ nguồn Hacker News và số lượng hai bài. | `hn_search(query="SQLite", sort="latest", limit=2)` | v5, lượt 3 | `answered`. Tool trả hai kết quả. Một tiêu đề nói trực tiếp về SQLite, tiêu đề còn lại nói về coding agent và cần kiểm tra thêm độ liên quan. |
+| 4 | Yêu cầu đăng tin “Nhóm sẽ đọc tài liệu SQLite vào thứ Sáu” lên Telegram. | `clarify(response_type="yes_no")` | v5, lượt 4 | `waiting_for_user`. Agent đọc lại nội dung và chờ xác nhận. Transcript kết thúc ở đây, chưa có lời gọi `send`. |
 
 ### B5a. Required Evidence — Tool mới, unit test, UI
 

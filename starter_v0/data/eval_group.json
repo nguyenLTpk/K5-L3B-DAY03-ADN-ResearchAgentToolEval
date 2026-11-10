@@ -1,7 +1,137 @@
 {
   "dataset_id": "day03_v2_research_group",
   "dataset_role": "group",
-  "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
+  "description": "10 case của nhóm ADN: 5 một lượt và 5 nhiều lượt, kiểm tra bốn tool mới, việc sử dụng ngữ cảnh và quy tắc xác nhận trước khi gửi.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_wiki_vi",
+      "phase": "B",
+      "query": "Tra Wikipedia tiếng Việt về mã QR, lấy tối đa 2 trang để giải thích khái niệm.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "wiki", "args": {"lang": "vi", "limit": 2}}]
+      },
+      "metadata": {"what_it_tests": "Chọn wiki cho tra cứu bách khoa và giữ ngôn ngữ cùng giới hạn được yêu cầu."}
+    },
+    {
+      "id": "G02_hn_latest",
+      "phase": "B",
+      "query": "Tìm 2 bài mới nhất trên Hacker News về SQLite.",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [{"name": "hn_search", "args": {"query": "SQLite", "sort": "latest", "limit": 2}}]
+      },
+      "metadata": {"what_it_tests": "Giữ chủ đề SQLite và dùng chế độ mới nhất trên Hacker News."}
+    },
+    {
+      "id": "G03_github_stars",
+      "phase": "B",
+      "query": "Tìm 3 repo GitHub về DuckDB có nhiều sao nhất.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{"name": "github_search", "args": {"query": "DuckDB", "sort": "stars", "limit": 3}}]
+      },
+      "metadata": {"what_it_tests": "Phân biệt tìm repo GitHub với tìm bài viết và xếp hạng theo sao."}
+    },
+    {
+      "id": "G04_cite_ieee",
+      "phase": "B",
+      "query": "Định dạng nguồn mình cung cấp theo IEEE: Python Tutorial, https://docs.python.org/3/tutorial/. Chỉ dùng nguồn đó.",
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "tool_calls": [{"name": "cite", "args": {"style": "ieee"}}]
+      },
+      "metadata": {"what_it_tests": "Định dạng nguồn đã có theo IEEE mà không gọi thêm tool tìm kiếm hay đọc URL."}
+    },
+    {
+      "id": "G05_cite_missing_sources",
+      "phase": "B",
+      "query": "Chuyển danh sách nguồn của mình sang APA giúp nhé. Mình chưa gửi danh sách nguồn trong cuộc trò chuyện này.",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [{"name": "clarify", "args": {"response_type": "text"}}]
+      },
+      "metadata": {"what_it_tests": "Hỏi danh sách nguồn còn thiếu trước khi lập trích dẫn."}
+    },
+    {
+      "id": "G06_wiki_keep_topic",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Mình muốn tìm hiểu mã QR từ Wikipedia, tối đa 3 trang."},
+        {"role": "assistant", "content": "Bạn muốn dùng Wikipedia tiếng Anh hay tiếng Việt?"},
+        {"role": "user", "content": "Tiếng Việt nhé, và rút còn 1 trang."}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [{"name": "wiki", "args": {"query": "mã QR", "lang": "vi", "limit": 1}}]
+      },
+      "metadata": {"what_it_tests": "Giữ chủ đề từ lượt đầu, dùng tiếng Việt và cập nhật giới hạn theo lượt cuối."}
+    },
+    {
+      "id": "G07_two_research_sources",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Chủ đề mình đang tìm hiểu là DuckDB."},
+        {"role": "assistant", "content": "Bạn muốn tìm thông tin về DuckDB từ nguồn nào?"},
+        {"role": "user", "content": "Lấy cả 2 bài Hacker News mới nhất và 2 repo GitHub nhiều sao nhất về chủ đề đó trong lượt này."}
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {"name": "hn_search", "args": {"query": "DuckDB", "sort": "latest", "limit": 2}},
+          {"name": "github_search", "args": {"query": "DuckDB", "sort": "stars", "limit": 2}}
+        ]
+      },
+      "metadata": {"what_it_tests": "Gọi đủ hai tool tìm kiếm độc lập và truyền bộ tham số riêng cho từng nguồn."}
+    },
+    {
+      "id": "G08_cite_switch_style",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Nguồn của mình có tiêu đề SQLite Documentation và URL https://www.sqlite.org/docs.html. Ban đầu mình định dùng APA."},
+        {"role": "assistant", "content": "Mình đã ghi nhận tiêu đề và URL của nguồn."},
+        {"role": "user", "content": "Đổi sang MLA và tạo trích dẫn cho đúng nguồn ở trên nhé."}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "cite",
+            "args": {
+              "style": "mla",
+              "items": [{"title": "SQLite Documentation", "url": "https://www.sqlite.org/docs.html"}]
+            }
+          }
+        ]
+      },
+      "metadata": {"what_it_tests": "Ưu tiên kiểu MLA ở lượt cuối và giữ nguyên tiêu đề, URL từ lượt trước."}
+    },
+    {
+      "id": "G09_cancel_telegram",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Đăng lên Telegram nội dung: Buổi đọc paper dời sang thứ Sáu."},
+        {"role": "assistant", "content": "Bạn có xác nhận gửi nội dung này lên Telegram không?"},
+        {"role": "user", "content": "Không gửi nữa. Hủy yêu cầu, chỉ nhắn mình rằng đã hủy."}
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {"no_tool": true},
+      "metadata": {"what_it_tests": "Dừng luồng gửi khi người dùng hủy và phản hồi trực tiếp."}
+    },
+    {
+      "id": "G10_draft_is_not_approval",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Giữ bản nháp này: Nhóm sẽ đọc tài liệu SQLite vào thứ Sáu."},
+        {"role": "assistant", "content": "Mình đã ghi nhận bản nháp."},
+        {"role": "user", "content": "Đăng bản nháp đó lên Telegram giúp mình."}
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [{"name": "clarify", "args": {"response_type": "yes_no"}}]
+      },
+      "metadata": {"what_it_tests": "Xin xác nhận cho đúng nội dung đã có trước khi gọi send."}
+    }
+  ]
 }
