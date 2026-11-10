@@ -4,7 +4,7 @@
 
 - Họ tên: Lê Thành Nguyên
 - MSSV: 2A202603733
-- Email:
+- Email: nguyenngungonvc@gmail.com
 
 ## 2. Phần việc phụ trách
 
