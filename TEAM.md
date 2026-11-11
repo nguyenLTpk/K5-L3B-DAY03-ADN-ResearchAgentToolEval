@@ -6,7 +6,7 @@
 - Lớp: L3B
 - Repo nhóm: `K5-L3B-DAY03-ADN-ResearchAgentToolEval` (xem [SUBMISSION.md](SUBMISSION.md))
 - Demo UI (Quick Tunnel, link tạm thời): https://remaining-processor-sell-lonely.trycloudflare.com (cần giữ app và cloudflared đang chạy).
-- URL repo, nhánh nộp, commit chốt: https://github.com/nguyenLTpk/K5-L3B-DAY03-ADN-ResearchAgentToolEval · nhánh main · commit chốt: chưa chốt sau các thay đổi UI/báo cáo.
+- URL repo, nhánh nộp, commit chốt: https://github.com/nguyenLTpk/K5-L3B-DAY03-ADN-ResearchAgentToolEval · nhánh `main` · commit chốt: _(điền mã commit cuối cùng trên `main` ngay trước khi nộp)_
 
 ## Thành viên
 
@@ -15,7 +15,16 @@
 |   1 | Lê Hải Anh | 2A202603986 | lehaianh252005@gmail.com | haianh020505 | A — Prompt & tối ưu (C1, C2, C3) |
 |   2 | Lê Thành Nguyên | 2A202603733 | nguyenngungonvc@gmail.com | nguyenLTpk | B — Tool mới & unit test (C4) |
 |   3 | Trần Văn Quang | 2A202604032 |  |  | C — Eval nhóm & live chat (C5, C6 transcript) |
-|   4 | Nguyễn Hữu Mạnh | 2A202604015 |  |  | D — UI, demo & tổng hợp báo cáo (C6 UI, C7) |
+|   4 | Nguyễn Hữu Mạnh | 2A202604015 | nghmanh04@gmail.com |  | D — UI, demo & tổng hợp báo cáo (C6 UI, C7) |
+
+Tên tác giả commit trong lịch sử git của repo (để đối chiếu đóng góp C8):
+
+| Thành viên | Tên tác giả commit | Commit kỹ thuật chính |
+| ---------- | ------------------ | --------------------- |
+| A — Lê Hải Anh | `haianh020505` | `59b5b8c` (CP1–3, v0–v3), `189e1c8` + `4a1082a` (v4, v5) |
+| B — Lê Thành Nguyên | `NguyenLTpk` | `bba92d1` (4 tool mới, test, sửa bug) |
+| C — Trần Văn Quang | `OuyangXuelili` | `2d23dd4` (eval nhóm, run group, transcript) |
+| D — Nguyễn Hữu Mạnh | `Nguyen Huu Manh` | `2381d56` (UI, demo, local eval), `ae4aded` (UI, báo cáo) |
 
 ## Quy ước phân quyền file (tránh conflict)
 
@@ -31,9 +40,9 @@ Mỗi file dùng chung chỉ một người sửa. Ai cần thay đổi file c�
 Phối hợp:
 
 - B đã merge 4 tool mới (`wiki`, `hn_search`, `github_search`, `cite`) vào `tools.yaml`. A đã chạy lại v4 (thêm tool) và v5 (bỏ ép một bước) khớp bản nộp.
-- C dành đủ case trong 10 case của `eval_group.json` để kiểm tra route tới 4 tool mới của B (≥ 1 case/tool cho bonus).
+- C đã viết 10 case trong `eval_group.json`, có case route tới cả 4 tool mới của B (G01–G08).
 - Rule routing cho tool mới và boundary xác nhận của `send`: B/C gửi yêu cầu, A sửa `system_prompt.md` (mỗi thay đổi là một version mới, chạy lại base eval).
-- Bonus Small Local Model (D) dùng file riêng `system_prompt_local.md`, `tools_local.yaml`, chạy trên bản prompt/tools cuối (v5).
+- Bonus Small Local Model (D) dùng file riêng `system_prompt_local_v6.md`, `system_prompt_local_v7.md`, `tools_local.yaml` (nội dung giống `tools.yaml`), chạy trên bản prompt/tools cuối (v5).
 
 ## Cá nhân
 
@@ -111,7 +120,7 @@ Báo cáo cá nhân: [`report/team/2A202603733_LeThanhNguyen.md`](report/team/2A
 
 ## TranVanQuang-2A202604032
 
-Báo cáo cá nhân: `report/team/2A202604032_TranVanQuang.md`
+Báo cáo cá nhân: [`report/team/2A202604032_TranVanQuang.md`](report/team/2A202604032_TranVanQuang.md)
 
 ### Phần việc phụ trách
 
@@ -123,15 +132,25 @@ Báo cáo cá nhân: `report/team/2A202604032_TranVanQuang.md`
 
 ### Đóng góp cụ thể
 
--
+- 10 case trong `data/eval_group.json`: 5 single turn (G01–G05), 5 multi turn (G06–G10).
+  - Có case route tới cả 4 tool mới: `wiki` (G01, G06), `hn_search` (G02, G07), `github_search` (G03, G07), `cite` (G04, G08).
+  - Có case kiểm tra hỏi lại khi thiếu nguồn (G05), gọi 2 tool cho 2 nguồn độc lập (G07), hủy gửi Telegram (G09), bản nháp chưa phải là phê duyệt (G10).
+- Run suite `group` trên v5: 10/10 case đo được, 0 lỗi provider, **9/10 PASS**. Routing 100%, đối số 90%, nhiều lượt 80%.
+  - G08 FAIL do scorer so khớp toàn bộ object trong `items`; tool, kiểu MLA, tiêu đề và URL đều đúng.
+- Live chat 4 lượt bằng `chat.py` (v5): yêu cầu thường (`cite`), thiếu chủ đề rồi bổ sung (`clarify` → `hn_search`), yêu cầu đăng Telegram (`clarify` `yes_no`, không tự gửi).
+- Bonus gửi Telegram thật: **chưa làm** (transcript dừng ở bước xin xác nhận, chưa có `send(confirmed=true)`).
 
 ### Bằng chứng
 
--
+- `starter_v0/data/eval_group.json`
+- Run group: `starter_v0/runs/v5_B_group_openrouter_20261110T193140379550.json` (`v5+pe1ddb4bfa9ee+ta078bdccfe27`).
+- Transcript: `starter_v0/transcripts/v5_openrouter_20261110T193127740264.transcript.json`.
+- Group report mục B3, B4.
+- Commit: `2d23dd4`.
 
 ## NguyenHuuManh-2A202604015
 
-Báo cáo cá nhân: `report/team/2A202604015_NguyenHuuManh.md`
+Báo cáo cá nhân: [`report/team/2A202604015_NguyenHuuManh.md`](report/team/2A202604015_NguyenHuuManh.md)
 
 ### Phần việc phụ trách
 
@@ -142,8 +161,18 @@ Báo cáo cá nhân: `report/team/2A202604015_NguyenHuuManh.md`
 
 ### Đóng góp cụ thể
 
--
+- UI Streamlit `starter_v0/app.py`: chat nhiều lượt, chọn provider/model, xem chi tiết lời gọi tool, ghi transcript JSON, báo lỗi provider thay vì che lỗi. Thêm `streamlit>=1.35.0` vào `requirements.txt`.
+- Demo public qua Cloudflare Quick Tunnel (link tạm thời ở mục Thông tin nhóm) và poster `report/team/poster.html`.
+- Group report: Phần A (A1–A3), phần UI của B5a, mục 1, 5–8.
+- Bonus Small Local Model:
+  - Base eval v5 trên 2 model local: `qwen2.5:1.5b` (35%) và `qwen2.5:0.5b` (15%).
+  - 2 vòng tối ưu cho `qwen2.5:1.5b`: v6-local (30%), v7-local (35%), chưa vượt baseline local.
+  - Bảng cloud vs local ở mục B7; 4 dòng local trong `version_log.csv`.
 
 ### Bằng chứng
 
--
+- `starter_v0/app.py`, `starter_v0/requirements.txt`, `report/team/poster.html`.
+- Prompt local: `starter_v0/artifacts/system_prompt_local_v6.md`, `system_prompt_local_v7.md`; `starter_v0/artifacts/tools_local.yaml`.
+- Run local: `starter_v0/runs/v5-qwen2.5-1.5b_…001716….json`, `v5-qwen2.5-0.5b_…001901….json`, `v6-local-qwen2.5-1.5b_…002013….json`, `v7-local-qwen2.5-1.5b_…002335….json` (đều 20/20 case đo được, 0 lỗi provider).
+- Transcript UI: `starter_v0/transcripts/ui_ollama_20261111T004701147877.transcript.json`.
+- Commit: `2381d56`, `ae4aded`.

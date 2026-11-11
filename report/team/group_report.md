@@ -9,8 +9,13 @@
 ## 1. Thông tin nhóm
 
 - Tên nhóm: ADN
-- Thành viên và phân công: xem [TEAM.md](../../TEAM.md) (Lê Hải Anh: Phụ trách Role A - Prompt & Tối ưu v0–v3, hoàn thiện B1, B2)
-- Provider/model dùng cho v0–v3: OpenRouter (`openai/gpt-4o-mini`, temperature 0)
+- Thành viên và phân công: xem [TEAM.md](../../TEAM.md)
+  - A — Lê Hải Anh: prompt và tối ưu v0–v5, mục B1, B2.
+  - B — Lê Thành Nguyên: 4 tool mới, unit test, sửa bug tool có sẵn, mục B5a (tool/test), B5.
+  - C — Trần Văn Quang: 10 eval case nhóm, run group, live chat, mục B3, B4.
+  - D — Nguyễn Hữu Mạnh: UI, demo, poster, Phần A, B7, mục 1, 5–8.
+- Provider/model dùng cho v0–v5 và suite group: OpenRouter (`openai/gpt-4o-mini`, temperature 0). Bonus local (B7): Ollama `qwen2.5:1.5b`, `qwen2.5:0.5b`.
+- Bản prompt/tools nộp cuối: **v5** (`v5+pe1ddb4bfa9ee+ta078bdccfe27`).
 
 ## 2. Mục tiêu và cách tiếp cận — PHẦN A: Giới thiệu agent
 
@@ -67,6 +72,17 @@ Local: http://localhost:8501. Demo public qua Cloudflare Quick Tunnel: https://r
   - Viết lại toàn bộ description của 10 tool có sẵn, nêu rõ: chức năng, khi nào nên dùng, khi nào KHÔNG được dùng.
   - Tường minh hóa quy ước tham số (arg conventions): `screenname` không chứa ký tự `@`, tách từ khóa chủ đề khỏi `topic=news` và `timeframe=day` trong `lookup`, định dạng enum `Latest`/`Top` trong `social_search`.
   - Thiết lập ranh giới (boundary) nghiêm ngặt cho `send`: chỉ gọi khi đã có nội dung cụ thể và `confirmed=true` sau khi người dùng phê duyệt rõ ràng.
+- **`starter_v0/artifacts/system_prompt.md` ở v5**: thay chỉ dẫn "làm trong một bước, chọn một tool" còn sót của starter. Agent được gọi đủ các tool cần thiết khi yêu cầu có nhiều nguồn độc lập (ví dụ web và X), ngược lại chỉ gọi một tool; cấm gọi tool thừa và cấm gọi `format`/`cite` trước khi có dữ liệu.
+- **Tool mới của nhóm** (khai báo ở khối `# ---- Group tools (B) ----` cuối `tools.yaml`, đều không cần API key):
+
+  | Tool | Làm gì | Agent nên gọi khi |
+  |---|---|---|
+  | `wiki` | Tìm trang Wikipedia (`en`/`vi`), trả tiêu đề, mô tả, đoạn trích, link | Hỏi "X là gì", "Y là ai", định nghĩa, lịch sử một khái niệm. Không dùng cho tin tức mới (`lookup`) |
+  | `hn_search` | Tìm story Hacker News (`popular`/`latest`), trả link, điểm, số bình luận | Hỏi cộng đồng dev / Hacker News nói gì về một chủ đề. Không dùng cho X/Twitter (`social_search`) |
+  | `github_search` | Tìm repo GitHub (`stars`/`updated`/`best_match`), trả tên repo, mô tả, số sao | Cần repo, thư viện, code mã nguồn mở. Không dùng cho paper (`papers`) |
+  | `cite` | Định dạng nguồn đã có thành trích dẫn APA/MLA/IEEE, chạy local | Cần danh sách tài liệu tham khảo cho nguồn đã thu thập. Không tìm nguồn, không bịa tác giả/ngày/URL |
+
+- **Code tool có sẵn**: sửa 3 bug với input biên từ model (`send` coi `confirmed="false"` là đã duyệt; `timeline`/`social_search` với `limit` âm hoặc không phải số; `format` raise thay vì trả error dict). Chi tiết ở B5.
 
 ## 4. Kết quả — PHẦN B: Chi tiết và bằng chứng
 
@@ -85,11 +101,11 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 
 Ghi chú về run: file `starter_v0/runs/v0_B_base_openrouter_20261110T180937971787.json` mang nhãn `v0` nhưng có hash của v3 (`v0+p04552040eeb2+ta01960b8f782`, chạy lúc 18:09 sau run v3 lúc 18:08) và đạt 20/20. Đây là lần chạy lặp lại v3 bị đặt nhầm nhãn, **không phải baseline**. Baseline v0 hợp lệ duy nhất là `v0_B_base_openrouter_20261110T180041253555.json` (`v0+peb1c8179815b+te69bc53ed884`, 15/20). Run Gemini `v0_B_base_gemini_...` bị loại vì `provider_error_cases=5`.
 
-Kết quả thực nghiệm v4 và v5: sau khi B thêm 4 tool mới vào cuối `tools.yaml`, `tools_hash` của bản nộp đổi thành `a078bdccfe27`. Hai run v4 và v5 đã hoàn thành chuẩn xác trên nhánh `b-tool`:
+Kết quả thực nghiệm v4 và v5: sau khi B thêm 4 tool mới vào cuối `tools.yaml`, `tools_hash` của bản nộp đổi thành `a078bdccfe27`. Hai run v4 và v5 được chạy trên đúng bản `tools.yaml` có 4 tool mới và được ghi ở commit `189e1c8`:
 - **v4:** chạy với prompt snapshot v3 và 14 tool declarations. Đạt 19/20 PASS. `R10` hồi quy: model tự điền tài khoản `elonmusk` thay vì hỏi lại (phân tích ở B2).
 - **v5:** chạy với prompt v5 (đã bỏ chỉ dẫn ép một bước/một tool) và 14 tool declarations. Đạt **20/20 PASS (100%)**, 0 lỗi provider, routing 100%, arguments 100%, multiturn 100%.
 
-Lần chạy v4/v5 đầu tiên (commit `f6c88c6` trên main) đã bị loại vì chạy trước khi merge 4 tool mới của B (mang hash cũ). Hai run v4 (`runs/v4_B_base_openrouter_20261110T190814400861.json`) và v5 (`runs/v5_B_base_openrouter_20261110T190946471016.json`) hiện tại trên nhánh `b-tool` là hai run chuẩn khớp hoàn toàn với bản nộp cuối cùng.
+Lần chạy v4/v5 đầu tiên (commit `f6c88c6`) đã bị loại vì chạy trước khi có 4 tool mới của B (mang hash v3) và đã được xóa ở commit `9af1f8a`. Hai run v4 (`runs/v4_B_base_openrouter_20261110T190814400861.json`) và v5 (`runs/v5_B_base_openrouter_20261110T190946471016.json`) hiện có trên `main` là hai run khớp với bản nộp cuối cùng.
 
 ### B2. Failure Analysis
 
@@ -179,7 +195,7 @@ Run đo đủ 10/10 case, 0 lỗi provider và 9/10 case PASS. Điểm chọn to
 |---|---|---|---|
 | Tool mới (`tools/<tên>/`) | [`tools/wiki/`](../../starter_v0/tools/wiki/), [`tools/hn_search/`](../../starter_v0/tools/hn_search/), [`tools/github_search/`](../../starter_v0/tools/github_search/), [`tools/cite/`](../../starter_v0/tools/cite/) (mỗi folder có `tool.py` + `TOOL.md`); đăng ký trong [`tools/__init__.py`](../../starter_v0/tools/__init__.py) và khối `# ---- Group tools (B) ----` cuối [`artifacts/tools.yaml`](../../starter_v0/artifacts/tools.yaml) | 4 tool không cần API key: `wiki` (Wikipedia, kiến thức nền), `hn_search` (Hacker News, thảo luận cộng đồng dev), `github_search` (repo mã nguồn mở), `cite` (định dạng trích dẫn APA/MLA/IEEE, chạy local). Smoke test gọi API thật ngày 2026-11-10 trả kết quả đúng cho cả 3 tool live. `pytest tests/test_tool_contract.py`: 75 passed | Mỗi description ghi rõ khi nào dùng / không dùng so với `lookup`, `social_search`, `papers`, `fetch`, `format`. Input xấu (query rỗng, enum sai) trả error dict **không gọi mạng**; `limit` ép về int có chặn trên. GitHub giới hạn ~10 request/phút khi không xác thực → trả `HTTPError` dict. `cite` không bịa tác giả/ngày/URL |
 | Unit test tool mới (≥ 3 test/tool) | [`tests/test_tools_todo.py`](../../starter_v0/tests/test_tools_todo.py); `pytest` toàn suite: **140 passed, 0 failed, 0 skipped** | `wiki` 5 test (13 trường hợp parametrize), `hn_search` 4 (5), `github_search` 5 (6), `cite` 7 (8). Mỗi tool có happy path (assert cả request gửi đi lẫn kết quả map), input xấu từ model, và nhánh lỗi (HTTP 429/500/403, timeout) | Test chạy offline: mọi HTTP mock bằng `fake_http`, không dùng key thật |
-| UI (lệnh chạy + link dùng thử) | [app.py](../../starter_v0/app.py), [requirements.txt](../../starter_v0/requirements.txt); lệnh tại A1 | Streamlit và Cloudflare Quick Tunnel trả HTTP 200; Ollama/qwen2.5:1.5b đã cài/tải; smoke CLI qua cùng `chat.run_model_tool_loop` gọi `wiki` thành công | Chưa xác nhận trọn luồng bằng thao tác trình duyệt; keys cho provider/tool trả phí chưa cấu hình |
+| UI (lệnh chạy + link dùng thử) | [app.py](../../starter_v0/app.py), [requirements.txt](../../starter_v0/requirements.txt) (`streamlit>=1.35.0`); lệnh và link tại A1; [transcript UI](../../starter_v0/transcripts/ui_ollama_20261111T004701147877.transcript.json) | Streamlit và Cloudflare Quick Tunnel trả HTTP 200; UI chat nhiều lượt, chọn provider/model, hiện chi tiết lời gọi tool và ghi transcript JSON; smoke CLI qua cùng `chat.run_model_tool_loop` gọi `wiki` thành công | UI hiện lỗi provider ra màn hình thay vì che lỗi. Mặc định chọn Ollama `qwen2.5:1.5b` (chỉ đạt 35% ở B7); chọn OpenRouter + v5 để có hành vi như eval. Chưa xác nhận trọn luồng bằng thao tác trình duyệt; transcript UI hiện có không có lời gọi tool. Keys cho provider/tool trả phí chưa cấu hình trên máy demo |
 
 Tool unit tests: số test đã viết, và một ví dụ lỗi mà unit test bắt được nhưng eval không bắt được.
 
@@ -193,9 +209,9 @@ Chỉ điền nếu nhóm làm bonus (ghi riêng, tối đa 10 điểm). Tool c�
 
 | Bonus | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| Small Local Model | xem B7 |  |  |
-| Hơn 3 tool mới (≥ 4) | 4 folder `tools/wiki/`, `tools/hn_search/`, `tools/github_search/`, `tools/cite/`; test trong `tests/test_tools_todo.py`; eval case route tới từng tool: xem B3 (`data/eval_group.json`, người C) | Mỗi tool đủ `TOOL.md` (frontmatter đúng contract), đăng ký registry + `tools.yaml`, ≥ 4 test/tool | Còn chờ: mỗi tool cần ≥ 1 eval case trong `eval_group.json` (C phụ trách) và rule routing trong `system_prompt.md` nếu cần (A phụ trách) |
-| `send` gửi thật lên Telegram sau xác nhận | transcript |  |  |
+| Small Local Model | xem B7; 4 run `starter_v0/runs/*_ollama_*.json`; prompt local `system_prompt_local_v6.md`, `system_prompt_local_v7.md` | 2 model local (`qwen2.5:1.5b` 35%, `qwen2.5:0.5b` 15%) chạy base eval v5; 2 vòng tối ưu v6-local (30%), v7-local (35%); có bảng cloud vs local | Hai vòng tối ưu chưa vượt baseline local; prompt local chưa chạy ngược trên cloud |
+| Hơn 3 tool mới (≥ 4) | 4 folder `tools/wiki/`, `tools/hn_search/`, `tools/github_search/`, `tools/cite/`; test trong `tests/test_tools_todo.py`; eval case route tới từng tool: xem B3 (`data/eval_group.json`) | Mỗi tool đủ `TOOL.md` (frontmatter đúng contract), đăng ký registry + `tools.yaml`, ≥ 4 test/tool. Mỗi tool có eval case route tới: `wiki` G01/G06, `hn_search` G02/G07, `github_search` G03/G07, `cite` G04/G08; run group: 7/8 case này PASS (G08 FAIL do so khớp object `items`, xem B3) | `system_prompt.md` chưa có rule routing riêng cho tool mới; việc chọn tool dựa vào description trong `tools.yaml` |
+| `send` gửi thật lên Telegram sau xác nhận | — | **Không làm.** Transcript B4 dừng ở bước `clarify(response_type="yes_no")`, chưa có `send(confirmed=true)` và `status: sent` | Boundary xác nhận (bắt buộc) đã có trong prompt/`tools.yaml` và được kiểm tra ở R12, G09, G10 |
 | Test challenge (0 skipped / regression test) | `pytest` output: **140 passed, 0 failed, 0 skipped** | Đạt cả hai điều kiện: toàn suite 0 skipped (14 stub đã viết hết) **và** có regression test cho 3 bug trong tool có sẵn | Regression test được kiểm chứng ngược: chạy trên code gốc thì **9 FAIL**, sau khi sửa thì PASS |
 
 Test challenge: số bug tìm được trong tool có sẵn (nếu có), cách sửa, và test regression tương ứng.
@@ -222,15 +238,18 @@ Chạy cùng bộ base 20 case trên prompt/tools v5 cuối cùng, provider Olla
 | v6-local-qwen2.5:1.5b | Qwen2.5 1.5B (Ollama) | [local prompt v6](../../starter_v0/artifacts/system_prompt_local_v6.md) + [local tools](../../starter_v0/artifacts/tools_local.yaml) | 30% | 45% | 30% | 33.3% | [round 1 run](../../starter_v0/runs/v6-local-qwen2.5-1.5b_B_base_ollama_20261111T002013205741.json) |
 | v7-local-qwen2.5:1.5b | Qwen2.5 1.5B (Ollama) | [local prompt v7](../../starter_v0/artifacts/system_prompt_local_v7.md) + [local tools](../../starter_v0/artifacts/tools_local.yaml) | 35% | 40% | 35% | 33.3% | [round 2 run](../../starter_v0/runs/v7-local-qwen2.5-1.5b_B_base_ollama_20261111T002335288041.json) |
 
-Các nhóm lỗi ở run base qwen2.5:1.5b:
+Các nhóm lỗi ở [run base qwen2.5:1.5b](../../starter_v0/runs/v5-qwen2.5-1.5b_B_base_ollama_20261111T001716212966.json) (13 case FAIL, đếm từ `actual_tool_calls`; mỗi case xếp vào đúng một nhóm):
 
 | Failure Pattern | Count | Example Case | Fix Tried | Helped? |
 |---|---:|---|---|---|
-| wrong / hallucinated tool | 4 | R02 chọn timeline thay vì social_search | v6 mô tả rõ hợp đồng tool; v7 thêm bảng route | Không: routing giảm từ 55% xuống 40% ở v7 |
-| invalid JSON args | 0 | Không ghi nhận | Không cần | N/A |
-| no tool call / answered directly | 9 | R03 không gọi lookup | v6 nhắc gọi tool cho thông tin bên ngoài | Không: case accuracy v6 giảm 35% xuống 30% |
-| missed clarify | 3 | R10, R11, R12 | v6 làm rõ clarify text/yes_no; v7 lặp quy tắc | Không: các lỗi vẫn còn ở v7 |
+| wrong / hallucinated tool | 3 | R02 chọn `timeline` thay vì `social_search`; M02, M06 | v6 mô tả rõ hợp đồng tool; v7 thêm bảng route | Không: routing giảm từ 55% xuống 40% ở v7 |
+| invalid JSON args (`_invalid_json_arguments`) | 0 | Không ghi nhận | Không cần | N/A |
+| no tool call / answered directly | 5 | R03, R06, R11, R12, R13 trả lời không gọi tool | v6 nhắc gọi tool cho thông tin bên ngoài | Không: số case không gọi tool tăng ở v6 và v7 |
+| missed `clarify` (gọi tool khác thay vì hỏi lại) | 1 | R10 gọi `timeline(screenname="your_account_handle")` | v6 làm rõ clarify text/yes_no; v7 lặp quy tắc | Không: R10 vẫn FAIL ở v6, v7 |
+| đúng tool, sai đối số | 4 | R05, R07, M03, M05 (bỏ `limit`, sai `search_type`, không áp dụng sửa đổi) | Không có vòng nhắm riêng | N/A |
 | repeated / unnecessary calls | 0 | Không ghi nhận | Không cần | N/A |
+
+R11 và R12 cũng là lỗi thiếu `clarify`, nhưng được đếm ở nhóm "no tool call" vì model không gọi tool nào. Tính cả hai ca này thì có 3 ca bỏ qua bước hỏi lại (R10, R11, R12).
 
 Không có chỉnh sửa nào giúp vượt base local qwen2.5:1.5b trong hai vòng đã đo: v6 giảm case accuracy còn 30%; v7 trở về 35% nhưng routing thấp hơn base. Model 1.5B tốt hơn model 0.5B ở bộ này (35% so với 15%), nhưng cloud v5 đạt 100%. Chỉ số đo khả năng route/args, không chứng minh chất lượng nội dung; các tool cần RapidAPI/Tavily/Firecrawl chưa có key nên kết quả thực thi của chúng chưa được đánh giá.
 
@@ -239,17 +258,22 @@ Bằng chứng hiện có cho thấy local phù hợp khi cần chạy model kh�
 ## 5. Khó khăn và cách xử lý
 
 - Ở v1 và v2, R12 vẫn chọn clarify nhưng sai response_type=text thay vì yes_no. V3 làm rõ thứ tự ưu tiên xác nhận trước khi hỏi nội dung; run v3 chuyển R12 sang PASS.
-- Khi thêm bốn tool ở v4, R10 hồi quy: model đoán tài khoản elonmusk từ ví dụ trong mô tả timeline. V5 bỏ gợi ý định danh không cần thiết và làm rõ quy tắc hỏi lại; R10 trở lại PASS, đồng thời base đạt 20/20.
+- Khi thêm bốn tool ở v4, R10 hồi quy: model đoán tài khoản `elonmusk`, một ví dụ có sẵn trong danh sách "Known mappings" ở mô tả `timeline`. V5 chỉ thay chỉ dẫn "một bước / một tool" trong prompt, không bỏ danh sách này và không nhắm vào R10. R10 PASS lại ở v5 và base đạt 20/20, nhưng với một run mỗi version chưa thể kết luận v5 đã sửa nguyên nhân (xem B2). Hướng xử lý tiếp theo là bỏ danh sách "Known mappings" và chạy lặp để đo.
+- Lần chạy v4/v5 đầu tiên mang hash v3 vì máy chạy eval chưa có 4 tool mới và prompt v5. Nhóm loại hai run đó, xóa bằng commit mới (`9af1f8a`), đồng bộ code qua nhánh `b-tool` rồi chạy lại; kiểm tra hash trước khi chạy để tránh lặp lại lỗi.
 - G08 bị chấm FAIL vì scorer so khớp toàn bộ object lồng nhau trong items; các trường tùy chọn rỗng làm lệch kết quả dù tool, style, title và URL đúng. Báo cáo giữ nguyên điểm theo scorer và ghi riêng kiểm tra thủ công.
 - Kết quả Hacker News ở lượt live có một tiêu đề liên quan trực tiếp SQLite và một tiêu đề cần kiểm tra thêm. Điều này cho thấy routing đúng không tự chứng minh độ liên quan của nội dung trả về; cần review nguồn.
 - UI Streamlit và Cloudflare Quick Tunnel trả HTTP 200; smoke query qua vòng lặp agent gọi wiki thành công. URL tạm thời: https://remaining-processor-sell-lonely.trycloudflare.com. Base eval local đo đủ 20 case, 0 provider error: Qwen2.5 1.5B đạt 35%, Qwen2.5 0.5B đạt 15%. Hai vòng tuning đạt lần lượt 30% và 35%, chưa vượt baseline 1.5B. Keys cho tool/provider trả phí vẫn chưa được cấu hình.
 
 ## 6. Tổng hợp đóng góp
 
-- **Lê Hải Anh (A):** baseline và các vòng tối ưu prompt/tool v0–v5; phân tích B1, B2.
-- **Lê Thanh Nguyên (B):** bốn tool mới, unit test, ba sửa lỗi hồi quy và các mục B5a/B5.
-- **Trần Văn Quang (C):** 10 eval case nhóm, run group, transcript live và mục B3/B4.
-- **Nguyễn Hữu Mạnh (D):** UI Streamlit, poster, Phần A và tổng hợp báo cáo; dựng Cloudflare Quick Tunnel https://remaining-processor-sell-lonely.trycloudflare.com; chạy base eval cho hai model local và hai vòng tuning v6/v7 (các run và metrics ở B7).
+| Thành viên | Đóng góp | Commit chính (tác giả trong git) |
+|---|---|---|
+| **Lê Hải Anh (A)** | Baseline và các vòng tối ưu prompt/tool v0–v5; phân tích B1, B2 | `59b5b8c` (v0–v3), `189e1c8`, `4a1082a` (v4, v5) — `haianh020505` |
+| **Lê Thành Nguyên (B)** | Bốn tool mới, 58 unit test, sửa 3 bug tool có sẵn kèm regression test; mục B5a (tool/test), B5 | `bba92d1` — `NguyenLTpk` |
+| **Trần Văn Quang (C)** | 10 eval case nhóm, run group, transcript live; mục B3, B4 | `2d23dd4` — `OuyangXuelili` |
+| **Nguyễn Hữu Mạnh (D)** | UI Streamlit, poster, Phần A và tổng hợp báo cáo; Cloudflare Quick Tunnel; base eval cho hai model local và hai vòng tuning v6/v7 (B7) | `2381d56`, `ae4aded` — `Nguyen Huu Manh` |
+
+Chi tiết phân công và bằng chứng từng người: [TEAM.md](../../TEAM.md) và báo cáo cá nhân trong `report/team/`.
 
 ## 7. Hạn chế và hướng cải thiện — B6. Reflection
 
