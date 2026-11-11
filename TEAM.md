@@ -11,7 +11,7 @@
 
 | STT | Họ tên | MSSV | Email | GitHub | Vai trò |
 | --: | ------ | ---- | ----- | ------ | ------- |
-|   1 | Lê Hải Anh | 2A202603986 | lehaianh252005@gmail.com |  | A — Prompt & tối ưu (C1, C2, C3) |
+|   1 | Lê Hải Anh | 2A202603986 | lehaianh252005@gmail.com | haianh020505 | A — Prompt & tối ưu (C1, C2, C3) |
 |   2 | Lê Thành Nguyên | 2A202603733 | nguyenngungonvc@gmail.com | nguyenLTpk | B — Tool mới & unit test (C4) |
 |   3 | Trần Văn Quang | 2A202604032 |  |  | C — Eval nhóm & live chat (C5, C6 transcript) |
 |   4 | Nguyễn Hữu Mạnh | 2A202604015 |  |  | D — UI, demo & tổng hợp báo cáo (C6 UI, C7) |
